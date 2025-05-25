@@ -17,9 +17,4 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    @PostMapping(consumes = "application/json", produces ="application/json")
-    public ResponseEntity<OrderDTO> createOrder(@RequestBody OrderDTO orderDTO) {
-        final OrderDTO dto = orderService.getFinalizeOrder(orderDTO);
-        return new ResponseEntity<>(dto, HttpStatus.OK);
-    }
 }
