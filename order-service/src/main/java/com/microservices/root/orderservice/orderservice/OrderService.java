@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microservices.root.orderservice.dto.OrderDTO;
 import com.microservices.root.orderservice.dto.ProductDTO;
 import com.microservices.root.orderservice.util.InterServiceCommunicationHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -18,24 +20,22 @@ import java.util.stream.Collectors;
 public class OrderService {
     @Value("${product.service.url}")
     private String productServiceURL;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    public OrderDTO getFinalizeOrder(OrderDTO orderDTO){
-        try {
-            final HttpResponse<String> response = InterServiceCommunicationHandler.interServiceCall(productServiceURL);
-            if(response.statusCode() == 200){
-                List<ProductDTO> productDTOList = objectMapper.readValue(response.body(), new TypeReference<>() {});
-                if(isAllOrderItemExists(orderDTO, productDTOList)){
-                    return orderDTO;
-                }
-                return null;
+    @Autowired
+    private InterServiceCommunicationHandler interServiceCommunicationHandler;
+
+    public OrderDTO getFinalizeOrder(OrderDTO orderDTO) {
+        final ResponseEntity<List<ProductDTO>> response = interServiceCommunicationHandler.interServiceCallByRestTemplate(productServiceURL);
+        if (response.getStatusCode().value() == 200) {
+            List<ProductDTO> productDTOList = response.getBody();
+            if (isAllOrderItemExists(orderDTO, productDTOList)) {
+                return orderDTO;
             }
             return null;
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
         }
+        return null;
     }
 
-    private boolean isAllOrderItemExists(OrderDTO orderDTO, List<ProductDTO> productDTOList){
+    private boolean isAllOrderItemExists(OrderDTO orderDTO, List<ProductDTO> productDTOList) {
         List<Long> productIds = orderDTO.getProductIds();
         Set<Long> availableProductIds = productDTOList.stream()
                 .map(ProductDTO::getId)
