@@ -1,19 +1,34 @@
 package com.microservices.root.orderservice.util;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import com.microservices.root.orderservice.configuration.WebClientConfig;
+import com.microservices.root.orderservice.dto.ProductDTO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
+
+@Service
 public class InterServiceCommunicationHandler {
-    public static HttpResponse<String> interServiceCall(String url) throws IOException, InterruptedException {
-        HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest
-                .newBuilder()
-                .uri(URI.create(url))
-                .GET()
-                .build();
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    @Value("${product.service.url}")
+    private String productServiceUrl;
+
+    private final WebClient webClient;
+
+    @Autowired
+    public InterServiceCommunicationHandler(WebClient webClient) {
+        this.webClient = webClient;
+    }
+
+    public List<ProductDTO> interServiceCallByWebClient() {
+        return webClient.get()
+                .uri(productServiceUrl)
+                .retrieve()
+                .bodyToFlux(ProductDTO.class)
+                .collectList()
+                .block();
     }
 }
